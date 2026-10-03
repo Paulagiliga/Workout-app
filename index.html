@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PA Plan</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f1115">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#0f1115;--card:#1a1d24;--tx:#eef0f4;--mu:#8b92a1;--db:#f59e0b;--bb:#3b82f6;--bw:#22c55e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px system-ui,sans-serif;padding:env(safe-area-inset-top) 0 90px}
+header{padding:16px}h1{margin:0;font-size:20px}small{color:var(--mu)}
+.tabs{display:flex;gap:8px;padding:0 16px 8px;position:sticky;top:0;background:var(--bg);z-index:2}
+.tabs button{flex:1;padding:10px;border:0;border-radius:10px;background:var(--card);color:var(--tx);font-weight:600}
+.tabs button.on{background:var(--tx);color:var(--bg)}
+.card{background:var(--card);margin:10px 16px;border-radius:14px;padding:12px;display:flex;gap:12px}
+.card.done{opacity:.45}
+svg{width:128px;height:96px;flex:none;background:#12141a;border-radius:10px;color:#ddd}
+.i{flex:1;min-width:0}.n{font-weight:700}.m{color:var(--mu);font-size:14px;margin:2px 0}
+.tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;color:#000;margin-right:6px}
+.DB{background:var(--db)}.BB{background:var(--bb)}.BW{background:var(--bw)}
+.b{display:flex;gap:8px;margin-top:6px}.b button{border:1px solid #333;background:none;color:var(--tx);border-radius:8px;padding:6px 10px}
+.note{margin:12px 16px;color:var(--mu);font-size:14px;line-height:1.5}
+#ov{position:fixed;inset:0;background:var(--bg);z-index:5;overflow:auto;padding:calc(16px + env(safe-area-inset-top)) 16px 120px;display:none}#ov svg{width:100%;height:auto;max-height:230px}#ov ol{padding-left:20px;line-height:1.55}#ov li{margin:6px 0}.big{width:100%;border:0;border-radius:12px;padding:16px;font-size:18px;font-weight:700;background:var(--tx);color:var(--bg);margin-top:12px}.x{background:none;border:0;color:var(--mu);font-size:15px;padding:0 0 10px}#rest{z-index:10;position:fixed;left:0;right:0;bottom:0;background:#000;padding:14px 16px calc(14px + env(safe-area-inset-bottom));display:none;justify-content:space-between;align-items:center;font-size:22px;font-weight:700}
+#rest button{background:none;border:1px solid #444;color:#fff;border-radius:8px;padding:6px 12px;font-size:14px}
+</style></head><body>
+<header><h1>PA Plan · Waist 28→32</h1><small>Mon · Wed · Sat — pair 1+2, 3+4, 5+6, 7+8 · rest 60s DB / 90s BB</small></header>
+<div class="tabs" id="tabs"></div><div id="list"></div>
+<div class="note"><b>Knee rule:</b> right leg never bends, left bends small.<br><b>Food:</b> 2700 kcal, 120g protein daily.<br>
+<b>Progress:</b> months 0–5 current 50kg set. 5–12: add 2×5kg plates. 12–18+: add 2×10kg plates.</div>
+<div id="ov"></div><div id="rest"><span id="t">60</span><button onclick="stop()">Skip</button></div>
+<script>
+const T="100,32 100,80",L="90,140 100,80 110,140";
+const F={
+raise:{h:[100,22,100,22],p:[["94,40 88,75","94,40 40,50"],["106,40 112,75","106,40 160,50"],[T],[L]],e:["86,78 114,78","38,50 162,50"]},
+press:{h:[100,22,100,22],p:[["94,40 78,52 86,36","94,40 84,22 88,6"],["106,40 122,52 114,36","106,40 116,22 112,6"],[T],[L]],e:["86,36 114,36","88,6 112,6"]},
+curl:{h:[100,22,100,22],p:[["94,40 90,70 90,98","94,40 90,68 96,46"],["106,40 110,70 110,98","106,40 110,68 104,46"],[T],[L]],e:["90,98 110,98","96,46 104,46"]},
+shrug:{h:[100,22,100,17],p:[["94,42 88,75 88,100","94,36 88,69 88,94"],["106,42 112,75 112,100","106,36 112,69 112,94"],[T],[L]],e:["88,100 112,100","88,94 112,94"]},
+row:{h:[140,46,140,46],p:[["88,140 90,80"],["90,80 130,52"],["130,52 130,90 130,110","130,52 106,66 124,72"]],e:["124,110 136,110","118,72 130,72"]},
+hinge:{h:[90,22,150,46],p:[["90,140 90,80"],["90,80 90,32","90,80 140,52"],["90,40 90,110","140,52 140,112"]],e:["84,112 96,112","134,114 146,114"]},
+bridge:{h:[24,112,24,112],p:[["36,114 100,114 140,92 170,118","36,114 100,90 140,80 170,118"]],e:["98,108 104,108","98,84 104,84"]},
+pushup:{h:[152,96,152,66],p:[["30,118 140,100","30,118 140,70"],["140,100 150,108 140,118","140,70 140,94 140,118"]],e:null},
+floor:{h:[22,106,22,106],p:[["34,114 110,114 140,90 170,118"],["50,112 66,106 52,100","50,112 50,80 50,50"]],e:["44,100 60,100","44,50 56,50"]},
+calf:{h:[90,22,90,16],p:[["90,32 90,80","90,26 90,74"],["90,140 90,80","92,134 90,74"],["90,40 90,100","90,34 90,94"]],e:["84,100 96,100","84,94 96,94"]}};
+const C={DB:"#f59e0b",BB:"#3b82f6",BW:"#22c55e"},D=1.2;
+function fig(t,q){const f=F[t],a=(n,v)=>`<animate attributeName="${n}" values="${v}" dur="${D*2}s" repeatCount="indefinite"/>`;
+let s=`<svg viewBox="0 0 200 150"><line x1="0" y1="142" x2="200" y2="142" stroke="#333" stroke-width="2"/><circle r="9" fill="none" stroke="currentColor" stroke-width="3">${a("cx",f.h[0]+";"+f.h[2]+";"+f.h[0])}${a("cy",f.h[1]+";"+f.h[3]+";"+f.h[1])}</circle>`;
+for(const[A,B]of f.p){const b=B||A;s+=`<polyline points="${A}" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">${B?a("points",A+";"+B+";"+A):""}</polyline>`}
+if(f.e&&q!="BW"){const[A,B]=f.e;s+=`<polyline points="${A}" pathLength="100" fill="none" stroke="${C[q]}" stroke-width="${q=="BB"?6:9}" stroke-linecap="round" ${q=="DB"?'stroke-dasharray="9 82 9"':""}>${a("points",A+";"+B+";"+A)}</polyline>`}
+return s+"</svg>"}
+const P={Mon:["Back Width + Chest",[
+["Single Arm Row","DB","3×12 each","15kg","row","Left hand on thigh, right leg straight"],
+["Seated Lateral Raise","DB","4×15","2.5–5kg","raise",""],
+["Floor Pullover","DB","3×12","10kg (one DB)","floor","Both hands on one dumbbell"],
+["Rear Delt Fly","DB","3×12","2.5–5kg","raise","Lie face down on floor"],
+["Seal Row","BB","4×8","25kg","row","Lie on floor, pull bar to chest"],
+["Floor Press","BB","4×8","25–35kg","floor",""],
+["Stiff-Leg RDL","BB","3×10","25–30kg","hinge","Right leg LOCKED straight"],
+["Single-Leg Glute Bridge","BW","3×12 left / 3×8 right","Bodyweight","bridge","Right leg straight"]]],
+Wed:["Legs + Shoulders",[
+["Stiff-Leg RDL","DB","4×10","15kg each","hinge",""],
+["Single-Leg Glute Bridge","DB","3×12","15kg on left hip","bridge",""],
+["Good Morning","BB","3×10","20–25kg","hinge","Legs straight, hips back"],
+["Single-Leg Calf Raise","DB","3×20 each","15kg one hand","calf","Standing, right leg straight"],
+["Seated Overhead Press","BB","4×8","20kg","press",""],
+["Seated Arnold Press","DB","3×10","7.5kg","press",""],
+["Floor Fly","DB","3×12","7.5kg","floor",""],
+["Standing Shrug","DB","3×15","15kg","shrug","Right leg straight"]]],
+Sat:["Arms + Width",[
+["Seated Lateral Raise Drop","DB","3× (12 + 15)","12×5kg → 15×2.5kg","raise","Drop weight, no rest"],
+["Upright Row","BB","3×10","15kg","shrug","Standing"],
+["Floor Press","DB","3×12","12.5kg","floor",""],
+["Push-Up (hands on chair)","BW","3× to failure","Bodyweight","pushup","Right leg straight"],
+["Single Arm Row","DB","3×10","12.5kg","row",""],
+["Seated Curl","DB","3×12","7.5kg","curl",""],
+["Seated Overhead Triceps Ext","DB","3×12","10kg","press",""],
+["Hip Extension (face-down leg lift)","BW","4×12 each","Bodyweight","bridge","Builds 32 trouser fit"],
+["Barbell Shrug","BB","2×15","35kg","shrug",""]]]};
+const S={
+raise:["Sit tall, core tight, shoulders down","Weights at your sides, slight bend in elbows","Raise arms out to shoulder height, lead with elbows","Pause 1 second at the top","Lower slowly over 3 seconds. No swinging"],
+press:["Sit tall with back supported or straight","Weights at shoulder height, forearms vertical","Press straight up until arms are almost locked","Do not arch your lower back","Lower slowly back to shoulders"],
+curl:["Sit tall, elbows pinned to your sides","Palms forward, start with arms fully extended","Curl up by bending only at the elbow","Squeeze at the top, no shoulder swing","Lower slowly over 3 seconds"],
+shrug:["Stand tall, arms straight, weight in front or sides","Keep right leg straight","Lift shoulders straight up toward your ears","Hold 1 second at the top, do not roll","Lower slowly"],
+row:["Hinge forward from the hips, back flat, core tight","Let the weight hang with arm straight","Pull elbow back toward your hip, squeeze shoulder blade","Pause 1 second","Lower slowly. Do not twist your torso"],
+hinge:["Stand with feet hip-width apart, right leg LOCKED straight","Weight close to your legs, chest up, back flat","Push hips back and lower weight along your legs","Go until you feel the hamstring stretch, not past a flat back","Drive hips forward to stand up and squeeze glutes"],
+bridge:["Lie on your back, arms by your sides","Plant left foot, keep right leg straight","Drive through left heel and lift hips","Squeeze glutes hard at the top, body in a straight line","Lower slowly. Do not arch your lower back"],
+pushup:["Hands on chair, slightly wider than shoulders","Body in one straight line, right leg straight","Lower chest to the chair edge, elbows about 45°","Press back up with control","Do not let hips sag"],
+floor:["Lie on your back, feet flat or legs as the plan says","Weight above chest, elbows touch the floor at the bottom","Lower slowly until the upper arm touches the floor","Press up until arms are straight","Keep wrists stacked over elbows"],
+calf:["Stand tall, hold weight in one hand, right leg straight","Hold a wall or rail for balance with the free hand","Rise high on your toes","Pause 1 second at the top","Lower slowly all the way"]};
+let cur,st;
+function guide(i){cur=P[day][1][i];st=0;cur.i=i;const x=cur;ov.style.display="block";
+ov.innerHTML=`<button class="x" onclick="shut()">← Back</button><div class="n" style="font-size:20px">${x[0]}</div><div class="m"><span class="tag ${x[1]}">${{DB:"DUMBBELL",BB:"BARBELL",BW:"BODYWEIGHT"}[x[1]]}</span>${x[2]} · ${x[3]}</div>${fig(x[4],x[1])}<div class="n" style="margin-top:10px">How to do it properly</div><ol>${S[x[4]].map(t=>`<li>${t}</li>`).join("")}${x[5]?`<li><b>${x[5]}</b></li>`:""}</ol><button class="big" onclick="run()">Start exercise ▶</button>`;scrollTo(0,0)}
+function run(){const x=cur,n=parseInt(x[2]);if(st>=n){tg(day+cur.i,1);shut();return}
+ov.innerHTML=`<button class="x" onclick="shut()">← Quit</button><div class="n" style="font-size:20px">${x[0]}</div>${fig(x[4],x[1])}<div style="font-size:42px;font-weight:800;margin:8px 0">Set ${st+1} / ${n}</div><div class="m">${x[2]} · ${x[3]}</div><div class="m">${S[x[4]][0]}. ${S[x[4]][4]}</div><button class="big" onclick="st++;st<${n}?go(${x[1]=="BB"?90:60}):0;run()">Set done ✓</button><button class="x" style="margin-top:10px" onclick="guide(${cur.i})">View form steps again</button>`}
+function shut(){ov.style.display="none";stop();draw()}
+const K=Object.keys(P),ld=()=>{try{return JSON.parse(localStorage.pa||"{}")}catch(e){return{}}};
+let day=["Wed","Mon","Mon","Wed","Wed","Sat","Sat"].length&&({1:"Mon",3:"Wed",6:"Sat"}[new Date().getDay()]||"Mon");
+function draw(){
+tabs.innerHTML=K.map(k=>`<button class="${k==day?"on":""}" onclick="day='${k}';draw()">${k}<br><small style="color:inherit">${P[k][0]}</small></button>`).join("");
+const s=ld();
+list.innerHTML=P[day][1].map((x,i)=>{const id=day+i,d=s[id];return `<div class="card ${d?"done":""}">${fig(x[4],x[1])}<div class="i"><div class="n">${i+1}. ${x[0]}</div><div class="m"><span class="tag ${x[1]}">${{DB:"DUMBBELL",BB:"BARBELL",BW:"BODYWEIGHT"}[x[1]]}</span>${x[2]}</div><div class="m">${x[3]}</div><div class="m">${x[5]}</div><div class="b"><button onclick="tg('${id}')">${d?"Undo":"Done ✓"}</button><button onclick="guide(${i})">Start ▶</button></div></div></div>`}).join("")}
+function tg(id,f){const s=ld();s[id]=f||!s[id];try{localStorage.pa=JSON.stringify(s)}catch(e){}draw()}
+let iv;function go(n){stop();rest.style.display="flex";t.textContent=n;iv=setInterval(()=>{if(--n<=0){navigator.vibrate&&navigator.vibrate([300,100,300]);stop()}else t.textContent=n},1000)}
+function stop(){clearInterval(iv);rest.style.display="none"}
+draw();
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
+</script></body></html>
